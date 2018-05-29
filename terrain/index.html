@@ -43,7 +43,7 @@
             for (x = half; x < self.max; x += size) {
               square(x, y, half, Math.random() * scale * 2 - scale);
             }
-          }``
+          }
           for (y = 0; y <= self.max; y += half) {
             for (x = (y + half) % size; x <= self.max; x += size) {
               diamond(x, y, half, Math.random() * scale * 2 - scale);
@@ -82,19 +82,31 @@
       Terrain.prototype.draw = function(ctx, width, height, angle) {
         var self = this;
         var waterVal = this.size * 0.3;
+        sin = Math.sin(angle);
+        cos = Math.cos(angle);
 
 
-        for (var y = 0; y < this.size; y++) {
-          for (var x = 0; x < this.size; x++) {
-            // invert draw order for certain angles 
-            var y0 = y;
-            if (angle > Math.PI / 2 && angle < Math.PI * (3/2))
-                y0 = this.size - y                
-            var val = this.get(x, y0);
-            var top = project(x, y0, val, angle);
-            var bottom = project(x + 1, y0, 0, angle);
-            var water = project(x, y0, waterVal, angle);
-            var style = brightness(x, y0, this.get(x + 1, y0) - val);
+        for (var b = 0; b < this.size; b++) {
+          for (var a = 0; a < this.size; a++) {
+            /** Make draw order adjustments for certain angles 
+            *   to always draw from back to front  */
+            //  First rotate draw order
+            if (angle % Math.PI > Math.PI / 4 && angle % Math.PI < Math.PI * 3/4) {
+              var y = a; var x = b;
+            } else { 
+              var y = b; var x = a;
+            }
+            //  Now invert draw order
+            if (angle >= Math.PI * 3/4 && angle < Math.PI * 5/4)
+              y = this.size - y;
+            else if (angle > Math.PI * 5/4)
+              x = this.size - x;
+
+            var val = this.get(x, y);
+            var top = project(x, y, val, angle);
+            var bottom = project(x, y, 0, angle);
+            var water = project(x, y, waterVal, angle);
+            var style = brightness(x, y, this.get(x + 1, y) - val);
 
             rect(top, bottom, style);
             rect(water, bottom, 'rgba(50, 150, 200, 0.15)');
@@ -103,20 +115,26 @@
 
 
         function rect(a, b, style) {
+          //setTimeout(function(){
           if (b.y < a.y) return;
           ctx.fillStyle = style;
+          //ctx.strokeStyle = style;
           ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+          //ctx.beginPath();
+          //ctx.moveTo(a.x, a.y);
+          //ctx.lineTo(b.x, b.y);
+          //ctx.stroke();
+          //});
         }
 
         function brightness(x, y, slope) {
-          if (y === self.max || x === self.max) return '#000';
+          if (y >= self.max || x >= self.max || x == 0 || y == 0) 
+            return '#000';
           var b = ~~(slope * 50) + 128;
           return ['rgba(', b, ',', b, ',', b, ',1)'].join('');
         }
 
         function iso(x, y, angle) {
-          var sin = Math.sin(angle);
-          var cos = Math.cos(angle);
           // translate to centre on origin
           var offset = self.size / 2;
           var x0 = x - offset;
@@ -156,13 +174,13 @@
         var width = display.width = window.innerWidth;
         var height = display.height = window.innerHeight;
         // Now long the rotation should be in ms
-        var rotate_speed = 60000;
+        var rotate_speed = 50000;
 
         var terrain = new Terrain(9);  
         terrain.generate(0.7);  
         setInterval(function(){ 
             ctx.clearRect(0, 0, width, height);
-            projection_angle  = 2 * Math.PI * ((performance.now() % rotate_speed) / rotate_speed);
+            projection_angle =  2 * Math.PI * ((performance.now() % rotate_speed) / rotate_speed);
             document.getElementById("angle").innerHTML = projection_angle;
             terrain.draw(ctx, width, height, projection_angle);
 
