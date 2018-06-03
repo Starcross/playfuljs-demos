@@ -82,29 +82,32 @@
       Terrain.prototype.draw = function(ctx, width, height, angle) {
         var self = this;
         var waterVal = this.size * 0.3;
-        sin = Math.sin(angle);
-        cos = Math.cos(angle);
+        sin = Math.sin(angle) * Math.sqrt(2);
+        cos = Math.cos(angle) * Math.sqrt(2);
 
 
         for (var b = 0; b < this.size; b++) {
           for (var a = 0; a < this.size; a++) {
             /** Make draw order adjustments for certain angles 
             *   to always draw from back to front  */
-            //  First rotate draw order
             if (angle % Math.PI > Math.PI / 4 && angle % Math.PI < Math.PI * 3/4) {
+              // Rotate draw order
               var y = a; var x = b;
+              // Draw across y instead of x plane 
+              var direction = 0;
             } else { 
               var y = b; var x = a;
+              var direction = 1;
             }
-            //  Now invert draw order
-            if (angle >= Math.PI * 3/4 && angle < Math.PI * 5/4)
+            if (angle >= Math.PI * 3/4 && angle < Math.PI * 5/4) 
+              //  Invert draw order
               y = this.max - y;
             else if (angle > Math.PI * 5/4)
               x = this.max - x;
 
             var val = this.get(x, y);
             var top = project(x, y, val, angle);
-            var bottom = project(x, y, 0, angle);
+            var bottom = project(x + direction, y + (1 - direction), 0, angle);
             var water = project(x, y, waterVal, angle);
             var style = brightness(x, y, this.get(x + 1, y) - val);
 
@@ -119,7 +122,7 @@
           if (b.y < a.y) return;
           ctx.fillStyle = style;
           //ctx.strokeStyle = style;
-          ctx.fillRect(a.x, a.y, b.x - a.x + 2, b.y - a.y);
+          ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
           //ctx.beginPath();
           //ctx.moveTo(a.x, a.y);
           //ctx.lineTo(b.x, b.y);
@@ -147,7 +150,7 @@
           var y2 = y1 + offset;
           return {
             x: 0.5 * (x2 + offset),
-            y: 0.5 * y2
+            y: 0.5 * (y2 + offset)
           };
         }
 
@@ -180,7 +183,7 @@
         terrain.generate(0.7);  
         setInterval(function(){ 
             ctx.clearRect(0, 0, width, height);
-            projection_angle =   2 * Math.PI * ((performance.now() % rotate_speed) / rotate_speed);
+            projection_angle =  Math.PI * 2 * ((performance.now() % rotate_speed) / rotate_speed);
             document.getElementById("angle").innerHTML = projection_angle;
             terrain.draw(ctx, width, height, projection_angle);
 
